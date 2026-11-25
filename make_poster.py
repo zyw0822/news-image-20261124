@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Build the 1024x1024 news poster for make.fun news-image-20261124.
-Deterministic: same input -> same PNG bytes (fixed palette, no timestamps).
+"""Build the 1024x1024 news poster for make.fun news-image-20261124 (v2).
+
+34 stories from Tuesday 24 November 2026, grouped by region.
+Deterministic: same input -> same PNG bytes (fixed palette, fixed fonts,
+no timestamps, no randomness, no network).
 """
 from PIL import Image, ImageDraw, ImageFont
 
@@ -9,6 +12,7 @@ NAVY = (11, 31, 58)
 RED = (178, 34, 34)
 INK = (17, 17, 17)
 GREY = (90, 90, 90)
+BODY = (55, 55, 55)
 LIGHT = (238, 240, 243)
 GOLD = (201, 162, 39)
 
@@ -40,81 +44,162 @@ def para(draw, x, y, text, fnt, max_w, leading, color=INK):
         y += leading
     return y
 
+def fit(draw, text, fnt, max_w):
+    """Truncate to one line with an ellipsis if too wide (deterministic)."""
+    if draw.textlength(text, font=fnt) <= max_w:
+        return text
+    ell = "…"
+    while text and draw.textlength(text + ell, font=fnt) > max_w:
+        text = text[:-1]
+    return text + ell
+
 img = Image.new("RGB", (W, H), "white")
 d = ImageDraw.Draw(img)
 
 # Masthead
-d.rectangle([0, 0, W, 118], fill=NAVY)
-d.text((36, 22), "WORLD NEWS", font=font(SERIF_B, 62), fill="white")
-d.text((36, 88), "THE DAY IN ONE PAGE", font=font(SANS_B, 16), fill=(180, 195, 220))
-d.text((1024 - 36 - d.textlength("TUESDAY 24 NOVEMBER 2026", font=font(SANS_B, 20)), 30),
-       "TUESDAY 24 NOVEMBER 2026", font=font(SANS_B, 20), fill="white")
-d.text((1024 - 36 - d.textlength("10 STORIES  •  ONE IMAGE", font=font(SANS, 15)), 62),
-       "10 STORIES  •  ONE IMAGE", font=font(SANS, 15), fill=(180, 195, 220))
-d.rectangle([0, 118, W, 124], fill=GOLD)
+d.rectangle([0, 0, W, 112], fill=NAVY)
+d.text((36, 18), "WORLD NEWS", font=font(SERIF_B, 58), fill="white")
+d.text((36, 82), "THE DAY IN ONE PAGE", font=font(SANS_B, 15), fill=(180, 195, 220))
+d.text((1024 - 36 - d.textlength("TUESDAY 24 NOVEMBER 2026", font=font(SANS_B, 19)), 26),
+       "TUESDAY 24 NOVEMBER 2026", font=font(SANS_B, 19), fill="white")
+d.text((1024 - 36 - d.textlength("34 STORIES  •  8 REGIONS", font=font(SANS, 14)), 56),
+       "34 STORIES  •  8 REGIONS", font=font(SANS, 14), fill=(180, 195, 220))
+d.rectangle([0, 112, W, 118], fill=GOLD)
 
 # Lead story
-y = 142
-d.text((36, y), "LEAD  •  TECHNOLOGY / MARKETS", font=font(SANS_B, 17), fill=RED)
-y += 28
-d.text((36, y), "HUANG IS BACK", font=font(SERIF_B, 78), fill=INK)
-y += 92
+y = 134
+d.text((36, y), "LEAD  •  TECHNOLOGY / MARKETS", font=font(SANS_B, 16), fill=RED)
+y += 26
+d.text((36, y), "HUANG IS BACK", font=font(SERIF_B, 58), fill=INK)
+y += 70
 y = para(d, 36, y,
-         "Nvidia's board reinstates Jensen Huang as CEO and president "
-         "after President Trump intervenes — shares surge 31% in a day, "
-         "Nasdaq jumps 6.5%.",
-         font(SANS_B, 24), 952, 32)
-y += 6
+         "Nvidia's board unanimously reinstates Jensen Huang as CEO and president, "
+         "effective immediately, after US officials say the move poses no national-security "
+         "risk. Shares soar 31%; Nasdaq jumps 6.5%.",
+         font(SANS_B, 20), 952, 26)
+y += 2
 y = para(d, 36, y,
-         "He resigned 11 days earlier over an affair with an alleged Chinese spy. "
-         "The SEC accounting probe, Congress hearings on 1–3 Dec, and the export-control "
-         "investigation all go on.",
-         font(SANS, 19), 952, 26, color=(60, 60, 60))
-d.line([36, y + 14, 988, y + 14], fill=LIGHT, width=2)
+         "Investigations continue: SEC accounting probe, Congress hearings 1–3 Dec, California AG probe, export-control inquiry.",
+         font(SANS, 15), 952, 20, color=(60, 60, 60))
+d.line([36, y + 10, 988, y + 10], fill=LIGHT, width=2)
 
-# Grid: 2 cols x 3 rows
-stories = [
-    ("SPACE / GEOPOLITICS", "A NUCLEAR WEAPON IN SPACE?",
-     "Western intelligence warns Russia may launch a nuclear-armed satellite within weeks, by December. NATO vows to defend space."),
-    ("CONFLICT", "UKRAINE SINKS WARSHIP OFF LIBYA",
-     "Kyiv says 7 naval drones sank the Russian corvette Merkury at Benghazi. The war spreads beyond Europe."),
-    ("MIDDLE EAST", "THREE TANKERS HIT MINES IN HORMUZ",
-     "Iran says three tankers caught fire under US escort. US Treasury sanctions Iran's shadow-banking network; $15bn flagged."),
-    ("TECH / TRADE", "US BLACKLISTS MEGASPEED",
-     "Washington moves to blacklist the Singapore AI firm at the centre of the Nvidia chip scandal. An Alibaba unit is hit too."),
-    ("BUSINESS", "CROWDSTRIKE TO BUY ZSCALER",
-     "A $44bn all-stock deal to build a cybersecurity giant, as AI security spending surges."),
-    ("EUROPE / ASIA", "RUSSIA WARNS ESTONIA",
-     "Moscow says Tallinn's actions risk open war. Solomon Islands ends its security pact with China."),
+# Region grid: 2 columns
+LEFT = [
+    ("NORTH AMERICA", [
+        ("CROWDSTRIKE TO BUY ZSCALER",
+         "$44bn all-stock deal to build a cybersecurity giant as AI security spending surges."),
+        ("SANOFI TO BUY INSMED FOR $41BN",
+         "All-cash offer of $175 a share for the biotech, Sanofi's biggest deal in years."),
+        ("US BLACKLISTS MEGASPEED",
+         "The Singapore AI firm at the heart of the Nvidia chip scandal is blacklisted."),
+        ("TRUMP HONOURS GIULIANI",
+         "Medal of Freedom for the ex-New York mayor, in a private Oval Office ceremony."),
+        ("TRUMP PARDONS THE TURKEYS",
+         "Thanksgiving tradition at the White House, two days before the holiday."),
+        ("SENATE PROBES VANCE OIL TIES",
+         "A Senate panel examines the vice-president's links to a Venezuelan oil contract."),
+    ]),
+    ("EUROPE", [
+        ("RUSSIA LAUNCHES NUCLEAR SATELLITE",
+         "Moscow puts a nuclear-powered satellite in orbit, drawing close Western scrutiny."),
+        ("UKRAINE SINKS WARSHIP OFF LIBYA",
+         "Kyiv says its drones sank the Russian corvette Merkury off Benghazi."),
+        ("PUTIN VOWS RETALIATION",
+         "Vows 'inevitable' retaliation; refinery output down 45% since late October."),
+        ("RUSSIAN DRONE ENTERS POLAND",
+         "A surveillance drone briefly crosses into Polish airspace before turning back."),
+        ("STRIKE ON ZAPORIZHZHIA KILLS 2",
+         "Overnight Russian strike hits an apartment block; 40 wounded, including four children."),
+        ("UK WARNS FIRMS OF SABOTAGE",
+         "British officials tell companies backing Ukraine to brace for Russian sabotage."),
+        ("GERMANY GETS DELTA ACCESS",
+         "First country given access to Ukraine's Delta battlefield system; missile deal in the works."),
+        ("BREAK-IN AT PRINCE WILLIAM'S HOME",
+         "Two men arrested after a break-in at Anmer Hall, the prince's Norfolk home."),
+    ]),
+    ("AFRICA", [
+        ("FIGHTING TRAPS EBOLA TEAMS",
+         "Heavy clashes in Ituri, DR Congo, cut off Ebola responders."),
+        ("KENYA BORDER CLASHES KILL 9",
+         "Fighting erupts on the Isiolo-Garissa border."),
+        ("LANDMINE DEATHS HIT 5-YEAR HIGH",
+         "7,000 casualties worldwide in 2025, worst in Myanmar and Syria."),
+    ]),
 ]
-gx, gy = 36, y + 30
-col_w, row_h = 466, 148
-for i, (kicker, head, body) in enumerate(stories):
-    x = gx + (i % 2) * (col_w + 20)
-    yy = gy + (i // 2) * row_h
-    d.text((x, yy), kicker, font=font(SANS_B, 14), fill=RED)
-    yy += 20
-    yy = para(d, x, yy, head, font(SERIF_B, 21), col_w, 25)
-    yy += 2
-    para(d, x, yy, body, font(SANS, 16), col_w, 21, color=(50, 50, 50))
-    if i % 2 == 0:
-        d.line([x + col_w + 10, gy + (i // 2) * row_h, x + col_w + 10, gy + (i // 2) * row_h + row_h - 12],
-               fill=LIGHT, width=2)
 
-# Also in brief
-by = gy + 3 * row_h + 8
-d.rectangle([0, by, W, by + 96], fill=NAVY)
-d.text((36, by + 10), "ALSO IN BRIEF", font=font(SANS_B, 16), fill=GOLD)
-para(d, 36, by + 32,
-     "Indonesia files treason charges over spying on President Prabowo  •  "
-     "US, Mexico, Costa Rica and Jamaica to host the 2031 Women's World Cup; UK hosts 2035  •  "
-     "SK hynix US shares surge 20% on the Nvidia rebound  •  COP31 climate talks close after a two-day delay.",
-     font(SANS, 15), 952, 20, color="white")
+RIGHT = [
+    ("ASIA", [
+        ("CHINA PROBES SHANGHAI CHIEF",
+         "Graft probe opens into Politburo member Chen Jining, the fourth such case in a year."),
+        ("PAKISTANI ASTRONAUT FOR TIANGONG",
+         "Set to be the first non-Chinese national aboard China's Tiangong station."),
+        ("HANOI BLAST KILLS AT LEAST 6",
+         "Restaurant explosion, suspected cooking gas, injures 10 in the Vietnamese capital."),
+        ("SEOUL SCRAMBLES JETS",
+         "Jets scrambled and air-raid alerts sounded as Russian jets enter its defence zone."),
+        ("INDIA NOW ASIA'S NO. 3 POWER",
+         "Lowy Index puts India past Russia and Japan, behind only the US and China."),
+        ("JAPAN'S FIRST EBOLA DRILL",
+         "Tokyo rehearses a response as an outbreak spreads in Congo."),
+        ("INDONESIA CHARGES EX-POLICE CHIEF",
+         "Treason charges over alleged spying aimed at undermining President Prabowo."),
+    ]),
+    ("MIDDLE EAST", [
+        ("TANKERS HIT BY MINES IN HORMUZ",
+         "Tankers are struck in the Strait of Hormuz; Iran and the US trade blame as tensions rise."),
+        ("HAMAS SECURITY CHIEF KILLED",
+         "Naeem Abu Nahel dies in an Israeli airstrike on Gaza City; six others also killed."),
+        ("HOUTHIS HIT RIYADH TOWER",
+         "Attack strikes the PIF tower, the capital's tallest skyscraper; 11 people injured."),
+        ("IRAN VOWS TO FIGHT US BLOCKADE",
+         "Tehran says it will use 'all tools' against the US naval blockade."),
+        ("IRAQ TAKES OVER KURDISH OILFIELDS",
+         "Prime minister orders the oil ministry to manage fields in Kurdish-controlled areas."),
+    ]),
+    ("LATIN AMERICA", [
+        ("MEXICO CAPTURES 'EL CHAPO ISIDRO'",
+         "Sinaloa kingpin seized in a bloody raid; 11 dead, four of them soldiers."),
+        ("WHO CHIEF VISITS CUBA",
+         "Tedros pledges $2m for vaccination during a visit to Havana."),
+    ]),
+    ("OCEANIA", [
+        ("FIJI SHUTS SCHOOLS OVER DROUGHT",
+         "All schools close for five days from 30 Nov as the El Niño drought deepens."),
+    ]),
+    ("SCIENCE", [
+        ("MERCURY PROBE BURN CUT SHORT",
+         "Burn ends early after a software glitch; ESA says the mission is safe."),
+    ]),
+]
+
+ITEM_H = 33
+SEC_H = 21
+COL_W = 464
+gy = y + 22
+
+def draw_column(x, sections):
+    yy = gy
+    for title, items in sections:
+        d.text((x, yy), title, font=font(SANS_B, 13), fill=RED)
+        d.line([x, yy + 17, x + COL_W, yy + 17], fill=LIGHT, width=1)
+        yy += SEC_H
+        for head, body in items:
+            d.text((x, yy), fit(d, head, font(SERIF_B, 13), COL_W),
+                   font=font(SERIF_B, 13), fill=INK)
+            d.text((x, yy + 16), fit(d, body, font(SANS, 10), COL_W),
+                   font=font(SANS, 10), fill=BODY)
+            yy += ITEM_H
+        yy += 2
+    return yy
+
+end_left = draw_column(36, LEFT)
+end_right = draw_column(524, RIGHT)
 
 # Footer
-fy = by + 96 + 10
-d.text((36, fy), "WORLD NEWS — 24 NOVEMBER 2026  •  Sources: Reuters, BBC, AP, Straits Times — 24 Nov 2026.",
-       font=font(SANS, 14), fill=GREY)
+fy = max(end_left, end_right) + 4
+d.text((36, fy),
+       "WORLD NEWS — TUESDAY 24 NOVEMBER 2026  •  Sources: Reuters, AP, BBC, SCMP, Al Jazeera, Ukrinform, Japan Times — 24 Nov 2026.",
+       font=font(SANS, 11), fill=GREY)
 
 img.save("entry.png", format="PNG", optimize=True)
 print("saved entry.png", img.size)
